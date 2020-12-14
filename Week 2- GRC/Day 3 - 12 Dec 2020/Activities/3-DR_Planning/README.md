@@ -12,7 +12,7 @@ In this activity, you'll develop a high level DR plan for GeldCorp. The DR plan 
 
 When thinking about the DR plan, assume that a major disruption has occurred, resulting in the loss of the main data and tech center for the company. 
 
-1. Use the below information about GeldCorp and reference the information from the [Threat Modeling activity](<https://github.com/coding-boot-camp/Cybersecurity-Lesson-Plans/blob/v2-GRC/1-Lesson-Plans/02-GRC/2/Activities/01_Threat_Modeling_Steps_1_4/Unsolved/README.md>). Read it thoroughly. It is up to you to determine which pieces are relevant for your specific plan. 
+1. Use the below information about GeldCorp and reference the information from the [Threat Modeling activity](<https://github.com/the-Coding-Boot-Camp-at-UT/UTA-MCC-CYBER-PT-11-2020-U-C/tree/master/Week%202-%20GRC/Day%202%20-%209%20Dec%202020/Activities/03_Threat_Modeling/Unsolved>). Read it thoroughly. It is up to you to determine which pieces are relevant for your specific plan. >). Read it thoroughly. It is up to you to determine which pieces are relevant for your specific plan. 
 
     - **Physical Environment**
 
