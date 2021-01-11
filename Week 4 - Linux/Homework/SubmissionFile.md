@@ -63,8 +63,51 @@
 3. Command to run an audit:
 
 4. Provide a report from the Lynis output on what can be done to harden the system.
+* Consider hardening SSH configuration [SSH-7408] 
+    - Details  : AllowTcpForwarding (YES --> NO)
+      https://cisofy.com/controls/SSH-7408/
 
-    - Screenshot of report output:
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : ClientAliveCountMax (3 --> 2)
+      https://cisofy.com/controls/SSH-7408/
+
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : Compression (YES --> (DELAYED|NO))
+      https://cisofy.com/controls/SSH-7408/
+
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : LogLevel (INFO --> VERBOSE)
+      https://cisofy.com/controls/SSH-7408/
+
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : MaxAuthTries (6 --> 2)
+      https://cisofy.com/controls/SSH-7408/
+
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : MaxSessions (10 --> 2)
+      https://cisofy.com/controls/SSH-7408/
+
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : PermitRootLogin (WITHOUT-PASSWORD --> NO)
+      https://cisofy.com/controls/SSH-7408/
+
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : Port (22 --> )
+      https://cisofy.com/controls/SSH-7408/
+
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : TCPKeepAlive (YES --> NO)
+      https://cisofy.com/controls/SSH-7408/
+
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : X11Forwarding (YES --> NO)
+      https://cisofy.com/controls/SSH-7408/
+
+  * Consider hardening SSH configuration [SSH-7408] 
+    - Details  : AllowAgentForwarding (YES --> NO)
+      https://cisofy.com/controls/SSH-7408/
+
+   
 
 
 ### Bonus
