@@ -127,12 +127,6 @@
 4. Provide a report from the chrootkit output on what can be done to harden the system.
     - Screenshot of end of sample output: 
     
-! sysadmin     2653 tty2   /usr/lib/gnome-settings-daemon/gsd-xsettings
-! sysadmin     2540 tty2   ibus-daemon --xim --panel disable
-! sysadmin     2544 tty2   /usr/lib/ibus/ibus-dconf
-! sysadmin     2829 tty2   /usr/lib/ibus/ibus-engine-simple
-! sysadmin     2548 tty2   /usr/lib/ibus/ibus-x11 --kill-daemon
-! sysadmin     2742 tty2   nautilus-desktop
 ! root        13061 pts/0  /bin/sh /usr/sbin/chkrootkit -x
 ! root        13494 pts/0  ./chkutmp
 ! root        13496 pts/0  ps axk tty,ruser,args -o tty,pid,ruser,args
@@ -141,6 +135,7 @@
 ! sysadmin    13037 pts/0  bash
 chkutmp: nothing deleted
 not tested
+
 
 
 ---
