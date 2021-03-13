@@ -322,7 +322,6 @@ The final WebVM's should resemble the following:
 
 ![](1/Images/Avail_Set/final-VM.png)
 
-
 #### Setting up your Jump Box Administration
 
 The goal of this activity was to create a security group rule to allow SSH connections only from your current IP address, and to connect to your new virtual machine for management.
@@ -679,6 +678,513 @@ by setting deprecation_warnings=False in ansible.cfg.
 ```
 
 - Ignore the `[DEPRECATION WARNING]` or add the line `ansible_python_interpreter=/usr/bin/python3` next to each Ip address in the hosts file.
+
+---
+
+#### Setup your Ansible Playbooks
+
+The goal here is to create an Ansible playbook that installed Docker and configure a VM with the DVWA web app.
+
+---
+
+1. Connect to your jump box, and connect to the Ansible container in the box. 
+
+    - If you stopped your container or exited it in the last activity, find it again using `docker container list -a`.
+
+    ```bash
+    root@Red-Team-Web-VM-1:/home/RedAdmin# docker container list -a
+    CONTAINER ID        IMAGE                           COMMAND                  CREATED             STATUS                         PORTS               NAMES
+    Exited (0) 2 minutes ago                           hardcore_brown
+    a0d78be636f7        cyberxsecurity/ansible:latest   "bash"                   3 days ago  
+    ```
+    - **NOTE:** In this example, the container is called `hardcore_brown` and this name is randomly generated. The name of your container will be different.
+
+   - Start the container again using `docker start [container_name]`.
+
+    ```bash
+    root@Red-Team-Web-VM-1:/home/RedAdmin# docker start hardcore_brown
+    hardcore_brown
+    ```
+
+   - Get a shell in your container using `docker attach [container_name]`.
+
+    ```bash
+    root@Red-Team-Web-VM-1:/home/RedAdmin# docker attach hardcore_brown
+    root@1f08425a2967:~#
+    ```
+
+2. Create a YAML playbook file that you will use for your configuration. 
+
+  ```bash
+  root@1f08425a2967:~# nano /etc/ansible/pentest.yml
+  ```
+
+   The top of your YAML file should read similar to:
+
+```YAML
+---
+- name: Config Web VM with Docker
+    hosts: web
+    become: true
+    tasks:
+```
+
+- Use the Ansible `apt` module to install `docker.io` and `python3-pip`:
+**Note:** `update_cache` must be used here, or `docker.io` will not install. (this is the equivalent of running `apt update`)
+
+  ```YAML
+    - name: docker.io
+      apt:
+				update_cache: yes
+        name: docker.io
+        state: present
+
+    - name: Install pip3
+      apt:
+        force_apt_get: yes
+        name: python3-pip
+        state: present
+  ```
+
+Note: `update_cache: yes` is needed to download and install docker.io
+
+- Use the Ansible `pip` module to install `docker`:
+
+  ```bash
+    - name: Install Python Docker module
+      pip:
+        name: docker
+        state: present
+  ```
+
+Note: Here we are installing the Python Docker Module, so Ansible can then utilize that module to control docker containers. More about the Python Docker Module [HERE](https://docker-py.readthedocs.io/en/stable/)
+
+- Use the Ansible `docker-container` module to install the `cyberxsecurity/dvwa` container.
+  - Make sure you publish port `80` on the container to port `80` on the host.
+  ```YAML
+    - name: download and launch a docker web container
+      docker_container:
+        name: dvwa
+        image: cyberxsecurity/dvwa
+        state: started
+        restart_policy: always
+        published_ports: 80:80
+  ```
+
+NOTE: `restart_policy: always` will ensure that the container restarts if you restart your web vm. Without it, you will have to restart your container when you restart the machine.
+
+You will also need to use the `systemd` module to restart the docker service when the machine reboots. That block looks like this:
+
+```YAML
+    - name: Enable docker service
+      systemd:
+        name: docker
+        enabled: yes
+```
+
+3. Run your Ansible playbook on the new virtual machine.
+
+    Your final playbook should read similar to:
+    ```YAML
+    ---
+    - name: Config Web VM with Docker
+      hosts: webservers
+      become: true
+      tasks:
+      - name: docker.io
+        apt:
+          force_apt_get: yes
+          update_cache: yes
+          name: docker.io
+          state: present
+
+      - name: Install pip3
+        apt:
+          force_apt_get: yes
+          name: python3-pip
+          state: present
+
+      - name: Install Docker python module
+        pip:
+          name: docker
+          state: present
+
+      - name: download and launch a docker web container
+        docker_container:
+          name: dvwa
+          image: cyberxsecurity/dvwa
+          state: started
+          published_ports: 80:80
+
+      - name: Enable docker service
+        systemd:
+          name: docker
+          enabled: yes
+    ```
+
+  - Running your playbook should produce an output similar to the following:
+
+    ```bash
+    root@1f08425a2967:~# ansible-playbook /etc/ansible/pentest.yml
+
+    PLAY [Config Web VM with Docker] ***************************************************************
+
+    TASK [Gathering Facts] *************************************************************************
+    ok: [10.0.0.6]
+
+    TASK [docker.io] *******************************************************************************
+    [WARNING]: Updating cache and auto-installing missing dependency: python-apt
+
+    changed: [10.0.0.6]
+
+    TASK [Install pip3] *****************************************************************************
+    changed: [10.0.0.6]
+
+    TASK [Install Docker python module] ************************************************************
+    changed: [10.0.0.6]
+
+    TASK [download and launch a docker web container] **********************************************
+    changed: [10.0.0.6]
+
+    PLAY RECAP *************************************************************************************
+    10.0.0.6                   : ok=5    changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+    ```
+
+4. To test that DVWA is running on the new VM, SSH to the new VM from your Ansible container.
+
+    - SSH to your container:
+
+    ```bash
+    root@1f08425a2967:~# ssh sysadmin@10.0.0.6
+    Welcome to Ubuntu 18.04.3 LTS (GNU/Linux 5.0.0-1027-azure x86_64)
+
+    * Documentation:  https://help.ubuntu.com
+    * Management:     https://landscape.canonical.com
+    * Support:        https://ubuntu.com/advantage
+
+      System information as of Mon Jan  6 20:01:03 UTC 2020
+
+      System load:  0.01              Processes:              122
+      Usage of /:   9.9% of 28.90GB   Users logged in:        0
+      Memory usage: 58%               IP address for eth0:    10.0.0.6
+      Swap usage:   0%                IP address for docker0: 172.17.0.1
+
+
+    18 packages can be updated.
+    0 updates are security updates.
+
+
+    Last login: Mon Jan  6 19:33:51 2020 from 10.0.0.4
+    ```
+
+    - Run `curl localhost/setup.php` to test the connection. If everything is working, you should get back some HTML from the DVWA container.
+
+    ```bash
+    ansible@Pentest-1:~$ curl localhost/setup.php
+
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+    <html xmlns="http://www.w3.org/1999/xhtml">
+
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+        <title>Setup :: Damn Vulnerable Web Application (DVWA) v1.10 *Development*</title>
+
+        <link rel="stylesheet" type="text/css" href="dvwa/css/main.css" />
+
+        <link rel="icon" type="\image/ico" href="favicon.ico" />
+
+        <script type="text/javascript" src="dvwa/js/dvwaPage.js"></script>
+
+      </head>
+    ```
+
+---
+
+#### Setting up the Load Balancer
+
+To complete this activity, you had to install a load balancer in front of the VM to distribute the traffic among more than one VM.
+
+---
+
+1. Create a new load balancer and assign it a static IP address.
+
+    - Start from the homepage and search for "load balancer."
+![](3/Images/Load-Balancer/LBSearch.png)
+
+- Click **+ Add** to create a new load balancer.
+    - It should have a static public IP address. 
+    - Click **Create** to create the load balancer.
+![](3/Images/Load-Balancer/CreateLB.png)
+![](3/Images/Load-Balancer/FinalizeLB.png)
+
+
+2. Add a health probe to regularly check all the VMs and make sure they are able to receive traffic.
+![](3/Images/Load-Balancer/HealthProbe.png)
+
+3. Create a backend pool and add BOTH of your VM's to it.
+![](3/Images/Load-Balancer/PoolSettings.png)
+
+---
+
+#### Setting up the NSG to expose port 80
+
+ To complete this activity, you had to configure the load balancer and security group to work together to expose port `80` of the VM to the internet.
+
+1. Create a load balancing rule to forward port `80` from the load balancer to your Red Team VNet.
+
+    - Name: Give the rule an appropriate name that you will recognize later.
+
+    - IP Version: This should stay on **IPv4**.
+
+    - Frontend IP address: There should only be one option here.
+
+    - Protocol: Protocol is **TCP** for standard website traffic.
+
+    - Port: Port is `80`.
+
+    - Backend port: Backend port is also `80`.
+
+    - Backend pool and Health probe: Select your backend pool and your health probe.
+
+    - Session persistence: This should be changed to **Client IP and protocol**.
+        - Remember, these servers will be used by the Red Team to practice attacking machines. If the session changes to another server in the middle of their attack, it could stop them from successfully completing their training.
+
+    - Idle timeout: This can remain the default (**4 minutes**).
+
+    - Floating IP: This can remain the default (**Disabled**).
+
+    ![](3/Images/Load-Balancer/LBRuleSettings.png)
+
+
+2. Create a new security group rule to allow port `80` traffic from the internet to your internal VNet.
+
+    - Source: Change this your external IPv4 address.
+
+    - Source port ranges: We want to allow **Any** source port, because they are chosen at random by the source computer.
+
+    - Destination: We want the traffic to reach our **VirtualNetwork**.
+
+    - Destination port ranges: We only want to allow port `80`.
+
+    - Protocol: Set the standard web protocol of **TCP** or **Any**.
+
+    - Action: Set to **Allow** traffic.
+
+    - Name: Choose an appropriate name that you can recognize later.
+
+![](3/Images/HTTP-SG/HTTP-Rule.png)
+
+3. Remove the security group rule that blocks _all_ traffic on your vnet to allow traffic from your load balancer through.
+
+    - Remember that when we created this rule we were blocking traffic from the allow rules that were already in place. One of those rules allows traffic from load balancers.
+
+    - Removing your default deny all rule will allow traffic through.
+
+4. Verify that you can reach the DVWA app from your browser over the internet.
+
+    - Open a web browser and enter the front-end IP address for your load balancer with `/setup.php` added to the IP address.
+
+        - For example: `http://40.122.71.120/setup.php`
+
+![](3/Images/HTTP-SG/DVWA-Test.png)
+
+**Note:** With the stated configuration, you will not be able to access these machines from another location unless the security Group rule is changed.
+
+---
+
+#### Setting up Redundancy
+
+To complete this activity, you had to create a copy of your VM using your Ansible playbook for the configuration, and then place the VM in the backend pool for the load balancer.
+
+1. Launch a new VM in the Azure portal.
+
+    - Name this VM: `Web-3`
+
+    - Be sure to use the same admin name and SSH key from your Ansible container that you used for the current DVWA machine.
+
+    - You may need to start your Ansible container on your jump box to get the key.
+
+        - Run `sudo docker container list -a` to see a list of all the containers (you should only have one), and note the unique name of your container.
+
+        - Run the following commands to start your container and get the key:
+
+        ```bash
+        $ sudo docker start your_container_name
+        your_container_name
+        $ sudo docker attach your_container_name
+        $ cat .ssh/id_rsa.pub
+        ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDdFS0nrcNG91P3HV60pPCDE0YCKNeS5Kr8edGxCeXUT1SP09Eyxxpi6LPZbL0Nkn8JNtdaxN9qyWG4Xpuh+rzCl9QnnGsdge76muzwl6awVUvRn0IAjM/e3RCKt0e1xSRiGaUY1ch41NY1Dih/MjxPunC2BykSGP17/hgMmLPKe8ZsHVaiFv1SiEqsGHa/
+        ```
+
+        - Copy the key into your configuration.
+
+    ![](3/Images/new-VM/new-vm-config.png)
+
+    - For your **Availability set**, set **RedTeamAS**.
+
+    - Do not give your new VM an external IP address.
+    - Do not assign a load balancer.
+
+![](3/../2/Images/provisioner-setup/vm-networking.png)
+
+2. Once your machine is set up, connect to the Ansible container on your jump box and test the Ansible connection using SSH.
+
+    ```bash
+    $ ssh ansible@10.0.0.7
+    The authenticity of host '10.0.0.7 (10.0.0.7)' can't be established.
+    ECDSA key fingerprint is SHA256:Jes0kNsSifAVf/TEcfPxhP4/p2fmS7WGk2O8xo8vC64.
+    Are you sure you want to continue connecting (yes/no)? yes
+
+    Warning: Permanently added '10.0.0.7' (ECDSA) to the list of known hosts.
+
+    Welcome to Ubuntu 18.04.3 LTS (GNU/Linux 5.0.0-1027-azure x86_64)
+    ```
+
+    - Run `exit` to return to your Ansible container.
+
+
+3. Add the internal IP address of the new VM to your Ansible configuration.
+
+    - Get the internal IP from the VM details page in Azure:
+
+    ![](3/Images/new-VM/vm-details.png)
+
+    - On your Ansible container, run `nano /etc/ansible/hosts`.
+
+    - Add the new IP address under the IP of the other VM.
+    ```bash
+    # Ex 2: A collection of hosts belonging to the 'webservers' group
+
+    [webservers]
+    ## alpha.example.org
+    ## beta.example.org
+    ## 192.168.1.100
+    ## 192.168.1.110
+    10.0.0.6 ansible_python_interpreter=/usr/bin/python3
+    10.0.0.7 ansible_python_interpreter=/usr/bin/python3
+		10.0.0.8 ansible_python_interpreter=/usr/bin/python3
+    # If you have multiple hosts following a pattern you can specify
+    # them like this:
+    ```
+    - Save and exit the hosts file.
+
+4. Test your Ansible configuration with the Ansible `ping` command.
+
+    - Run `ansible -m ping all` (Ignore `[DEPRECATION WARNING]`.)
+
+    ```bash
+    root@1f08425a2967:~# ansible -m  ping all
+
+    10.0.0.6 | SUCCESS => {
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python"
+        },
+        "changed": false,
+        "ping": "pong"
+    }
+
+    10.0.0.7 | SUCCESS => {
+        "ansible_facts": {
+            "discovered_interpreter_python": "/usr/bin/python"
+        },
+        "changed": false,
+        "ping": "pong"
+    }
+    ```
+
+5. Run your Ansible playbook to configure your new machine.
+
+    **Hint**: If you run your playbook, it will run on both machines. Ansible will recognize your original VM and check its settings. It should only make changes to the new VM.
+
+    - Run `ansible-playbook your-playbook.yml`
+
+    ```bash
+    root@1f08425a2967:~# ansible-playbook /etc/ansible/pentest.yml 
+
+    PLAY [Config Web VM with Docker] ****************************************************
+
+    TASK [Gathering Facts] **************************************************************
+    ok: [10.0.0.7]
+    ok: [10.0.0.6]
+
+    TASK [docker.io] ********************************************************************
+    ok: [10.0.0.6]
+    [WARNING]: Updating cache and auto-installing missing dependency: python-apt
+
+    changed: [10.0.0.7]
+
+    TASK [Install pip] ******************************************************************
+    ok: [10.0.0.6]
+    changed: [10.0.0.7]
+
+    TASK [Install Docker python module] *************************************************
+    ok: [10.0.0.6]
+    changed: [10.0.0.7]
+
+    TASK [download and launch a docker web container] ***********************************
+    changed: [10.0.0.6]
+    changed: [10.0.0.7] 
+
+    PLAY RECAP **************************************************************************
+    10.0.0.6                   : ok=5    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+    10.0.0.7                   : ok=5    changed=4    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+    ```
+
+6. When the Ansible playbook is finished running, SSH to your new VM and test the DVWA app using `curl`.
+
+    - Run `ssh ansible@10.0.0.7`
+
+    - Run `curl localhost/setup.php`
+
+    - Your output should look like the following:
+
+    ```bash
+    root@1f08425a2967:~# ssh ansible@10.0.0.7
+    Welcome to Ubuntu 18.04.3 LTS (GNU/Linux 5.0.0-1027-azure x86_64)
+
+    * Documentation:  https://help.ubuntu.com
+    * Management:     https://landscape.canonical.com
+    * Support:        https://ubuntu.com/advantage
+
+    System information as of Fri Jan 10 21:01:52 UTC 2020
+
+    System load:  0.24              Processes:              122
+    Usage of /:   9.9% of 28.90GB   Users logged in:        0
+    Memory usage: 57%               IP address for eth0:    10.0.0.7
+    Swap usage:   0%                IP address for docker0: 172.17.0.1
+
+
+    19 packages can be updated.
+    16 updates are security updates.
+
+
+    Last login: Fri Jan 10 20:57:26 2020 from 10.0.0.4
+    ansible@Pentest-2:~$ curl localhost/setup.php
+
+    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+    <html xmlns="http://www.w3.org/1999/xhtml">
+
+        <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+            <title>Setup :: Damn Vulnerable Web Application (DVWA) v1.10 *Development*</title>
+
+            <link rel="stylesheet" type="text/css" href="dvwa/css/main.css" />
+
+            <link rel="icon" type="\image/ico" href="favicon.ico" />
+
+            <script type="text/javascript" src="dvwa/js/dvwaPage.js"></script>
+
+        </head>
+    #Truncated
+    ```
+---
+#### END
+
+Congratulations! You have created a highly available web server for XCorp's Red Team to use for testing and training.
 
 ---
 © 2020 Trilogy Education Services, a 2U, Inc. brand. All Rights Reserved.
