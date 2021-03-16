@@ -64,6 +64,8 @@ In order to solve each riddle, you will need to apply cryptographic concepts cov
 
 - You will need to **submit a screenshot** as proof that the ransomware has been decrypted.
 
+- NOTE: Question 6 is a bonus since we didn't cover it directly in class. Your command will start with `steghide extract -sf <picture>`
+
 Good luck and act fast as the Nakatomi Patients are counting on you!
 
 
