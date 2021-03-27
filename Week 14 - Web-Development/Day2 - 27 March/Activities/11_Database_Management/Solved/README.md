@@ -29,7 +29,7 @@ In this activity, you deployed a container set and managed the database.
 
 4. Within the interactive bash session, use the credentials found earlier to enter a MySQL session using the `goodcorpdb` MySQL database.
 
-    - Enter `mysql -u admin -p12356 -D goodcorpdb` to enter a MySQL session.
+    - Enter `mysql -u admin -p123456 -D goodcorpdb` to enter a MySQL session.
 
 5. Create a basic `SELECT` query to find all of the employee table entries in the `goodcorpdb` database.
 
