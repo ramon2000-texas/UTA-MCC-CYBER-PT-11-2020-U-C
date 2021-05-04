@@ -14,7 +14,7 @@
 
 - Choose the `Capstone` machine from the list of Virtual Machines and double-click it to get a terminal window.
 
-- Login to the machine using the credentials: `vagrant:tnargav`
+- Login to the machine using the credentials: `root:toor`
 
 - Switch to the root user with `sudo su`
 
