@@ -23,7 +23,7 @@ Even though you already know what you did to exploit the target, analyzing the l
 
 To start viewing logs in Kibana, we will need to import our filebeat, metricbeat and packetbeat data.
 
-Double-click the Google Chrome icon on the Windows host's desktop to launch Kibana. If it doesn't load as the default page, navigate to http://192.168.1.105:5601.
+Double-click the Google Chrome icon on the Windows host's desktop to launch Kibana. If it doesn't load as the default page, navigate to http://192.168.1.100:5601.
 
 This will open 4 tabs automatically, but for now, we only want to use the first tab.
 
