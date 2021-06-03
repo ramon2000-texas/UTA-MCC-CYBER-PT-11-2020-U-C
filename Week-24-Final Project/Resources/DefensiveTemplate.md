@@ -21,6 +21,7 @@ The following machines were identified on the network:
   - **IP Address**:
 - Etc.
 
+
 ### Description of Targets
 _TODO: Answer the questions below._
 
